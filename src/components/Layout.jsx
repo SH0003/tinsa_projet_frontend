@@ -3,20 +3,13 @@ import styled from "styled-components";
 import logo from "../assets/logotinsa.png";
 import { useNavigate } from "react-router-dom";
 import { 
-  InboxOutlined, 
-  FilterOutlined, 
-  BarChartOutlined, 
-  DollarOutlined, 
-  ProjectOutlined, 
-  LineChartOutlined, 
-  ApartmentOutlined,
   SettingOutlined 
 } from '@ant-design/icons';
 import { Layout, Menu } from "antd";
 import { GrLogin } from "react-icons/gr";
 import SessionTimeout from './SessionTimeout';
 
-const { Header, Content, Footer } = Layout;
+const { Header, Content } = Layout;
 
 // Styled components définis directement dans le fichier
 const StyledHeader = styled(Header)`
@@ -64,7 +57,7 @@ const StyledMenu = styled(Menu)`
   }
 `;
 
-const StyledFooter = styled(Footer)`
+const StyledFooter = styled.div`
   text-align: center;
   background: #f0f2f5;
   padding: 15px;
@@ -75,11 +68,23 @@ const StyledFooter = styled(Footer)`
 const CustomLayout = ({ children }) => {
   const navigate = useNavigate();
   const [current, setCurrent] = useState(localStorage.getItem("activemenuitem") || "");
-  const [userRole, setUserRole] = useState(localStorage.getItem("userRole"));
-  // Mettre à jour le rôle utilisateur quand il change
+  const [menuItems, setMenuItems] = useState([]);
+
+  // Mettre à jour le menu en fonction du rôle utilisateur
   useEffect(() => {
-    const role = localStorage.getItem("userRole");
-    setUserRole(role);
+    const userRole = localStorage.getItem("userRole");
+    
+    // Items de menu de base (pour tous les utilisateurs)
+    const baseItems = [
+      { label: "Témoin", key: "/Temoins", icon: <SettingOutlined /> }
+    ];
+
+    // Ajouter des items supplémentaires selon le rôle si nécessaire
+    if (userRole === 'superadmin' || userRole === 'validateur') {
+      setMenuItems(baseItems);
+    } else {
+      setMenuItems(baseItems);
+    }
   }, []);
 
   useEffect(() => {
@@ -87,25 +92,6 @@ const CustomLayout = ({ children }) => {
       navigate(current);
     }
   }, [current, navigate]);
-
-  // Items de menu de base
-  const baseItems = [
-    { label: "Autorisation", key: "/Autorisation", icon: <ApartmentOutlined /> },
-    { label: "Stock", key: "/Stock", icon: <InboxOutlined /> },
-    { label: "Commercialisation", key: "/Commercialisation", icon: <DollarOutlined /> },
-    { label: "Technique", key: "/Technique", icon: <ProjectOutlined /> },
-  ];
-
-  const items = (userRole === 'superadmin' || userRole === 'validateur')
-    ? [
-        ...baseItems, 
-        { 
-          label: "Temoin", 
-          key: "/Temoins", 
-          icon: <SettingOutlined /> 
-        }
-      ]
-    : baseItems;
 
   const onClickMenu = (e) => {
     localStorage.setItem("activemenuitem", e.key);
@@ -141,7 +127,7 @@ const CustomLayout = ({ children }) => {
           mode="horizontal" 
           selectedKeys={[current]} 
           onClick={onClickMenu} 
-          items={items} 
+          items={menuItems} 
         />
 
         {/* 📌 DÉCONNEXION */}
@@ -158,8 +144,8 @@ const CustomLayout = ({ children }) => {
             transition: "background-color 0.3s ease"
           }}
           onClick={handleLogout}
-          onMouseEnter={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-          onMouseLeave={(e) => e.target.style.backgroundColor = "transparent"}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
         >
           <GrLogin style={{ fontSize: "20px", color: "#42005A" }} />
           <span style={{ fontSize: "14px" }}>Déconnexion</span>
