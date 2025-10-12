@@ -1,4 +1,3 @@
-// src/utils/axios.js
 import axios from "axios";
 
 
@@ -8,7 +7,6 @@ const axiosInstance = axios.create({
   baseURL: apiUrl,
 });
 
-// Variable pour stocker la demande de rafraîchissement en cours
 let refreshTokenPromise = null;
 
 // Fonction pour rafraîchir le token
