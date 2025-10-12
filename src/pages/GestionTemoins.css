@@ -1,0 +1,260 @@
+.gestion-temoins-container {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.header-section h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #42005A;
+}
+
+.stat-card {
+  text-align: center;
+  border-radius: 8px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.stat-card .stat-number {
+  font-size: 32px;
+  font-weight: bold;
+  color: #42005A;
+  margin-bottom: 8px;
+}
+
+.stat-card .stat-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.stat-card-blue .stat-number {
+  color: #1890ff;
+}
+
+.stat-card-green .stat-number {
+  color: #52c41a;
+}
+
+.stat-card-orange .stat-number {
+  color: #fa8c16;
+}
+
+/* Style pour les lignes expandables */
+.ant-table-row {
+  transition: background-color 0.3s ease;
+}
+
+.ant-table-row:hover {
+  background-color: #f0f9ff !important;
+}
+
+.ant-table-expanded-row > td {
+  padding: 0 !important;
+}
+
+/* Animation pour l'expansion des lignes */
+.ant-table-expanded-row-expand-icon-cell {
+  display: none;
+}
+
+/* Styles pour la carte */
+.leaflet-container {
+  border: 1px solid #e8e8e8;
+}
+
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+}
+
+.leaflet-popup-content {
+  margin: 13px 19px;
+}
+
+/* Style pour le tableau */
+.ant-table-wrapper {
+  background: white;
+  border-radius: 8px;
+}
+
+/* Amélioration des modals */
+.ant-modal-body {
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+/* Scroll bar personnalisé pour le modal */
+.ant-modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ant-modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.ant-modal-body::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.ant-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Animation pour les cartes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ant-card {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Style pour les descriptions dans les détails expandables */
+.ant-descriptions-bordered .ant-descriptions-item-label {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+.ant-descriptions-item-content {
+  background-color: white;
+}
+
+/* Highlight pour la ligne sélectionnée */
+.ant-table-row-expand-icon-cell {
+  width: 30px !important;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .gestion-temoins-container {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .header-section {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .stat-card {
+    margin-bottom: 16px;
+  }
+
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .gestion-temoins-container {
+    padding: 12px;
+  }
+
+  .stat-card .stat-number {
+    font-size: 24px;
+  }
+
+  .header-section h1 {
+    font-size: 20px;
+  }
+
+  /* Masquer certaines colonnes sur mobile */
+  .ant-table-cell:nth-child(4),
+  .ant-table-cell:nth-child(5) {
+    display: none;
+  }
+}
+
+/* Animation de pulse pour le marqueur sélectionné */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 77, 79, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
+  }
+}
+
+.leaflet-marker-icon.selected-marker {
+  animation: pulse 2s infinite;
+}
+
+/* Fix pour Leaflet dans les modales */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+.ant-modal .leaflet-container {
+  z-index: 1 !important;
+}
+
+.leaflet-pane {
+  z-index: 400;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1000;
+}
+
+.leaflet-control {
+  z-index: 1000;
+}
+
+/* Style pour le conteneur de carte */
+.map-container {
+  position: relative;
+  height: 450px;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Fix pour les tuiles qui ne se chargent pas */
+.leaflet-tile-container img {
+  width: 256px !important;
+  height: 256px !important;
+}
+
+.gestion-temoins-container .ant-btn-primary {
+  margin-left: auto;
+  display: block;
+}
