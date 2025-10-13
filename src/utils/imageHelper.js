@@ -4,31 +4,30 @@ export const getImageUrl = (imagePath) => {
     return '';
   }
   
-  // URL de l'API backend - IMPORTANT: utiliser la variable d'environnement
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-  
   console.log('🔍 imageHelper - imagePath reçu:', imagePath);
-  console.log('🔍 imageHelper - apiUrl:', apiUrl);
   
   // Si l'image est déjà en base64
   if (imagePath.startsWith('data:image')) {
     return imagePath;
   }
   
-  // Si l'image est déjà une URL complète
+  // ✅ Si l'image est sur Cloudinary (production)
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    console.log('✅ imageHelper - URL Cloudinary:', imagePath);
     return imagePath;
   }
   
-  // Si le chemin commence par /media/
+  // ✅ Si le chemin commence par /media/ (développement)
   if (imagePath.startsWith('/media/')) {
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
     const fullUrl = `${apiUrl}${imagePath}`;
-    console.log('✅ imageHelper - URL construite:', fullUrl);
+    console.log('✅ imageHelper - URL locale:', fullUrl);
     return fullUrl;
   }
   
-  // Cas par défaut
+  // Cas par défaut (ne devrait jamais arriver)
+  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
   const fullUrl = `${apiUrl}/media/${imagePath}`;
-  console.log('✅ imageHelper - URL construite (défaut):', fullUrl);
+  console.log('⚠️ imageHelper - URL par défaut:', fullUrl);
   return fullUrl;
 };
