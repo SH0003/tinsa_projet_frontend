@@ -20,7 +20,6 @@ const GestionTemoins = () => {
   const [form] = Form.useForm();
   const userRole = localStorage.getItem('userRole');
 
-
   const [options, setOptions] = useState({
     type_operation: [],
     orientation: [],
@@ -30,19 +29,29 @@ const GestionTemoins = () => {
   });
   const [loadingOptions, setLoadingOptions] = useState(true);
 
-  // ✅ MODIFIÉ : États pour les 3 filtres
+  // ✅ NOUVEAUX États pour les données géographiques
+  const [regions, setRegions] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [communes, setCommunes] = useState([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingCommunes, setLoadingCommunes] = useState(false);
+
+  // ✅ MODIFIÉ : États pour les 5 filtres
+  const [filterRegion, setFilterRegion] = useState(null);
+  const [filterProvince, setFilterProvince] = useState(null);
+  const [filterCommune, setFilterCommune] = useState(null);
   const [filterTypeOperation, setFilterTypeOperation] = useState(null);
   const [filterTypologie, setFilterTypologie] = useState(null);
-  const [filterAdresse, setFilterAdresse] = useState('');
 
   useEffect(() => {
     fetchOptions();
     fetchTemoins();
+    fetchRegions();
   }, []);
 
   useEffect(() => {
     applyFilters();
-  }, [temoins, filterTypeOperation, filterTypologie, filterAdresse]);
+  }, [temoins, filterRegion, filterProvince, filterCommune, filterTypeOperation, filterTypologie]);
 
   const getFullImageUrl = (url) => {
     if (!url) return '';
@@ -71,6 +80,47 @@ const GestionTemoins = () => {
     }
   };
 
+  // ✅ NOUVEAU : Récupérer les régions
+  const fetchRegions = async () => {
+    try {
+      const response = await axios.get('/api/geographic-data/?action=regions');
+      setRegions(response.data.regions);
+    } catch (error) {
+      console.error('Erreur lors du chargement des régions:', error);
+      message.error('Erreur lors du chargement des régions');
+    }
+  };
+
+  // ✅ NOUVEAU : Récupérer les provinces pour une région
+  const fetchProvinces = async (region) => {
+    setLoadingProvinces(true);
+    try {
+      const response = await axios.get(`/api/geographic-data/?action=provinces&region=${encodeURIComponent(region)}`);
+      setProvinces(response.data.provinces);
+    } catch (error) {
+      console.error('Erreur lors du chargement des provinces:', error);
+      message.error('Erreur lors du chargement des provinces');
+    } finally {
+      setLoadingProvinces(false);
+    }
+  };
+
+  // ✅ NOUVEAU : Récupérer les communes pour une province
+  const fetchCommunes = async (region, province) => {
+    setLoadingCommunes(true);
+    try {
+      const response = await axios.get(
+        `/api/geographic-data/?action=communes&region=${encodeURIComponent(region)}&province=${encodeURIComponent(province)}`
+      );
+      setCommunes(response.data.communes);
+    } catch (error) {
+      console.error('Erreur lors du chargement des communes:', error);
+      message.error('Erreur lors du chargement des communes');
+    } finally {
+      setLoadingCommunes(false);
+    }
+  };
+
   const fetchTemoins = async () => {
     setLoading(true);
     try {
@@ -85,9 +135,24 @@ const GestionTemoins = () => {
     }
   };
 
-  // ✅ MODIFIÉ : Application des 3 filtres
+  // ✅ MODIFIÉ : Application des 5 filtres
   const applyFilters = () => {
     let filtered = [...temoins];
+
+    // Filtre par Région
+    if (filterRegion) {
+      filtered = filtered.filter(t => t.region === filterRegion);
+    }
+
+    // Filtre par Province
+    if (filterProvince) {
+      filtered = filtered.filter(t => t.province === filterProvince);
+    }
+
+    // Filtre par Commune
+    if (filterCommune) {
+      filtered = filtered.filter(t => t.commune === filterCommune);
+    }
 
     // Filtre par Type d'opération
     if (filterTypeOperation) {
@@ -99,25 +164,42 @@ const GestionTemoins = () => {
       filtered = filtered.filter(t => t.typologie_bien === filterTypologie);
     }
 
-    // Filtre par Adresse (recherche dans commune, province, région, adresse)
-    if (filterAdresse) {
-      const searchTerm = filterAdresse.toLowerCase();
-      filtered = filtered.filter(t => 
-        (t.commune && t.commune.toLowerCase().includes(searchTerm)) ||
-        (t.province && t.province.toLowerCase().includes(searchTerm)) ||
-        (t.region && t.region.toLowerCase().includes(searchTerm)) ||
-        (t.adresse_generee && t.adresse_generee.toLowerCase().includes(searchTerm))
-      );
-    }
-
     setFilteredTemoins(filtered);
   };
 
-  // ✅ MODIFIÉ : Réinitialiser les 3 filtres
+  // ✅ NOUVEAU : Handler pour le changement de région
+  const handleRegionFilterChange = (value) => {
+    setFilterRegion(value);
+    setFilterProvince(null);
+    setFilterCommune(null);
+    setProvinces([]);
+    setCommunes([]);
+    
+    if (value) {
+      fetchProvinces(value);
+    }
+  };
+
+  // ✅ NOUVEAU : Handler pour le changement de province
+  const handleProvinceFilterChange = (value) => {
+    setFilterProvince(value);
+    setFilterCommune(null);
+    setCommunes([]);
+    
+    if (value && filterRegion) {
+      fetchCommunes(filterRegion, value);
+    }
+  };
+
+  // ✅ MODIFIÉ : Réinitialiser tous les filtres
   const handleResetFilters = () => {
+    setFilterRegion(null);
+    setFilterProvince(null);
+    setFilterCommune(null);
     setFilterTypeOperation(null);
     setFilterTypologie(null);
-    setFilterAdresse('');
+    setProvinces([]);
+    setCommunes([]);
   };
 
   const handleCreate = () => {
@@ -188,14 +270,15 @@ const GestionTemoins = () => {
   const uniqueTypologies = [...new Set(temoins.map(t => t.typologie_bien).filter(Boolean))];
 
   const handleValidate = async (temoinId) => {
-  try {
-    await axios.post(`/api/temoins/${temoinId}/valider/`);
-    message.success('Témoin validé avec succès');
-    fetchTemoins(); // Recharger la liste
-  } catch (error) {
-    message.error(error.response?.data?.error || 'Erreur lors de la validation');
-  }
-};
+    try {
+      await axios.post(`/api/temoins/${temoinId}/valider/`);
+      message.success('Témoin validé avec succès');
+      fetchTemoins();
+    } catch (error) {
+      message.error(error.response?.data?.error || 'Erreur lors de la validation');
+    }
+  };
+
   const expandedRowRender = (record) => {
     const userRole = localStorage.getItem('userRole');
   
@@ -214,7 +297,6 @@ const GestionTemoins = () => {
           </Col>
           <Col>
             <Space>
-              {/* ✅ Bouton de validation - visible uniquement pour validateur et superadmin */}
               {!record.is_validated && (userRole === 'validateur' || userRole === 'superadmin') && (
                 <Button 
                   type="primary" 
@@ -226,7 +308,6 @@ const GestionTemoins = () => {
                 </Button>
               )}
               
-              {/* ✅ Désactiver modification si validé */}
               <Button 
                 type="primary" 
                 icon={<EditOutlined />}
@@ -236,7 +317,6 @@ const GestionTemoins = () => {
                 Modifier
               </Button>
               
-              {/* ✅ Désactiver suppression si validé */}
               <Popconfirm
                 title="Supprimer ce témoin"
                 description="Êtes-vous sûr de vouloir supprimer ce témoin ?"
@@ -531,7 +611,7 @@ const GestionTemoins = () => {
       fixed: 'right',
       width: 130,
       render: (_, record) => {
-        const userRole = localStorage.getItem('userRole'); // ✅ AJOUTER
+        const userRole = localStorage.getItem('userRole');
         
         return (
           <Space>
@@ -545,7 +625,6 @@ const GestionTemoins = () => {
               title="Voir les détails"
             />
             
-            {/* ✅ Modifier visible uniquement pour superadmin si non validé */}
             {userRole === 'superadmin' && (
               <Button
                 type="link"
@@ -559,7 +638,6 @@ const GestionTemoins = () => {
               />
             )}
             
-            {/* ✅ Supprimer visible uniquement pour superadmin si non validé */}
             {userRole === 'superadmin' && (
               <Popconfirm
                 title="Supprimer ce témoin"
@@ -593,11 +671,73 @@ const GestionTemoins = () => {
     <div className="gestion-temoins-container">
       <Card>
         <Space direction="vertical" style={{ width: '100%' }} size="large">
-          {/* ✅ MODIFIÉ : Nouvelle section de filtres */}
+          {/* ✅ MODIFIÉ : Nouvelle section de filtres avec 5 filtres */}
           <Row gutter={[16, 16]} align="middle" justify="space-between">
             <Col flex="auto">
               <Row gutter={[12, 12]}>
-                <Col xs={24} sm={12} md={8} lg={6}>
+                {/* Filtre Région */}
+                <Col xs={24} sm={12} md={8} lg={4}>
+                  <Select
+                    placeholder="Région"
+                    style={{ width: '100%' }}
+                    allowClear
+                    value={filterRegion}
+                    onChange={handleRegionFilterChange}
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    {regions.map(region => (
+                      <Option key={region} value={region}>
+                        {region}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+
+                {/* Filtre Province */}
+                <Col xs={24} sm={12} md={8} lg={4}>
+                  <Select
+                    placeholder="Province"
+                    style={{ width: '100%' }}
+                    allowClear
+                    value={filterProvince}
+                    onChange={handleProvinceFilterChange}
+                    disabled={!filterRegion}
+                    loading={loadingProvinces}
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    {provinces.map(province => (
+                      <Option key={province} value={province}>
+                        {province}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+
+                {/* Filtre Commune */}
+                <Col xs={24} sm={12} md={8} lg={4}>
+                  <Select
+                    placeholder="Commune"
+                    style={{ width: '100%' }}
+                    allowClear
+                    value={filterCommune}
+                    onChange={setFilterCommune}
+                    disabled={!filterProvince}
+                    loading={loadingCommunes}
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    {communes.map(commune => (
+                      <Option key={commune} value={commune}>
+                        {commune}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+
+                {/* Filtre Type d'opération */}
+                <Col xs={24} sm={12} md={8} lg={4}>
                   <Select
                     placeholder="Type d'opération"
                     style={{ width: '100%' }}
@@ -613,7 +753,9 @@ const GestionTemoins = () => {
                     ))}
                   </Select>
                 </Col>
-                <Col xs={24} sm={12} md={8} lg={6}>
+
+                {/* Filtre Typologie */}
+                <Col xs={24} sm={12} md={8} lg={4}>
                   <Select
                     placeholder="Typologie"
                     style={{ width: '100%' }}
@@ -628,15 +770,8 @@ const GestionTemoins = () => {
                     ))}
                   </Select>
                 </Col>
-                <Col xs={24} sm={12} md={8} lg={6}>
-                  <Input
-                    placeholder="Rechercher une adresse..."
-                    allowClear
-                    value={filterAdresse}
-                    onChange={(e) => setFilterAdresse(e.target.value)}
-                    style={{ width: '100%' }}
-                  />
-                </Col>
+
+                {/* Bouton Réinitialiser */}
                 <Col xs={24} sm={12} md={8} lg={3}>
                   <Button onClick={handleResetFilters} style={{ width: '100%' }}>
                     Réinitialiser
@@ -708,7 +843,7 @@ const GestionTemoins = () => {
         onCancel={() => {
           setModalVisible(false);
           form.resetFields();
-        }}
+          }}
         footer={null}
         width={1200}
         destroyOnClose

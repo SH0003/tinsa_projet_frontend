@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Select, InputNumber, Button, Row, Col, Upload, message, Collapse, Spin } from 'antd';
-import { UploadOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { UploadOutlined } from '@ant-design/icons';
 import axios from '../../utils/axios';
 import TemoinMapSelector from './TemoinMapSelector';
 
@@ -10,9 +10,16 @@ const { Panel } = Collapse;
 
 const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
   const [images, setImages] = useState([]);
+  const [regions, setRegions] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [communes, setCommunes] = useState([]);
+  const [selectedRegion, setSelectedRegion] = useState(null);
+  const [selectedProvince, setSelectedProvince] = useState(null);
+  const [loadingGeographicData, setLoadingGeographicData] = useState(false);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingCommunes, setLoadingCommunes] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [activeKeys, setActiveKeys] = useState(['1']);
-  const [loadingAddress, setLoadingAddress] = useState(false); 
   const [options, setOptions] = useState({
     type_operation: [],
     orientation: [],
@@ -27,6 +34,105 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
   // ✅ État uniquement pour gérer l'affichage (parcelle grisée ou non)
   const [typologieBien, setTypologieBien] = useState(null);
 
+  // ✅ Charger les régions au montage du composant
+  useEffect(() => {
+    const fetchRegions = async () => {
+      setLoadingGeographicData(true);
+      try {
+        const response = await axios.get('/api/geographic-data/?action=regions');
+        setRegions(response.data.regions);
+      } catch (error) {
+        console.error('Erreur lors du chargement des régions:', error);
+        message.error('Erreur lors du chargement des régions');
+      } finally {
+        setLoadingGeographicData(false);
+      }
+    };
+    fetchRegions();
+  }, []);
+
+  // ✅ En mode édition, charger les provinces et communes existantes
+  useEffect(() => {
+    if (editMode) {
+      const region = form.getFieldValue('region');
+      const province = form.getFieldValue('province');
+      
+      if (region) {
+        setSelectedRegion(region);
+        fetchProvinces(region);
+        
+        if (province) {
+          setSelectedProvince(province);
+          fetchCommunes(region, province);
+        }
+      }
+    }
+  }, [editMode]);
+
+  // ✅ Fonction pour charger les provinces
+  const fetchProvinces = async (region) => {
+    setLoadingProvinces(true);
+    try {
+      const response = await axios.get(`/api/geographic-data/?action=provinces&region=${encodeURIComponent(region)}`);
+      setProvinces(response.data.provinces);
+    } catch (error) {
+      console.error('Erreur lors du chargement des provinces:', error);
+      message.error('Erreur lors du chargement des provinces');
+    } finally {
+      setLoadingProvinces(false);
+    }
+  };
+
+  // ✅ Fonction pour charger les communes
+  const fetchCommunes = async (region, province) => {
+    setLoadingCommunes(true);
+    try {
+      const response = await axios.get(
+        `/api/geographic-data/?action=communes&region=${encodeURIComponent(region)}&province=${encodeURIComponent(province)}`
+      );
+      setCommunes(response.data.communes);
+    } catch (error) {
+      console.error('Erreur lors du chargement des communes:', error);
+      message.error('Erreur lors du chargement des communes');
+    } finally {
+      setLoadingCommunes(false);
+    }
+  };
+
+  // ✅ Handler pour le changement de région
+  const handleRegionChange = (value) => {
+    setSelectedRegion(value);
+    setSelectedProvince(null);
+    setProvinces([]);
+    setCommunes([]);
+    
+    // Réinitialiser les champs province et commune
+    form.setFieldsValue({
+      province: undefined,
+      commune: undefined
+    });
+    
+    // Charger les provinces de la région sélectionnée
+    fetchProvinces(value);
+  };
+
+  // ✅ Handler pour le changement de province
+  const handleProvinceChange = (value) => {
+    setSelectedProvince(value);
+    setCommunes([]);
+    
+    // Réinitialiser le champ commune
+    form.setFieldsValue({
+      commune: undefined
+    });
+    
+    // Charger les communes de la province sélectionnée
+    const region = form.getFieldValue('region');
+    if (region) {
+      fetchCommunes(region, value);
+    }
+  };
+  
   // Récupérer les options depuis l'API au chargement
   useEffect(() => {
     const fetchOptions = async () => {
@@ -91,52 +197,6 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
   const initialLatitude = form.getFieldValue('latitude');
   const initialLongitude = form.getFieldValue('longitude');
 
-  // Fonction de géolocalisation inverse (Nominatim OpenStreetMap)
-  const reverseGeocode = async (lat, lng) => {
-    setLoadingAddress(true);
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=fr`
-      );
-      const data = await response.json();
-      
-      if (data && data.address) {
-        const address = data.address;
-        
-        // Extraire les informations d'adresse
-        const commune = address.city || address.town || address.village || address.municipality || '';
-        const province = address.state || address.province || '';
-        const region = address.region || address.state_district || '';
-        const road = address.road || address.street || '';
-        const suburb = address.suburb || address.neighbourhood || '';
-        
-        // Construire l'adresse complète
-        let adresseComplete = '';
-        if (road) adresseComplete += road;
-        if (suburb) adresseComplete += (adresseComplete ? ', ' : '') + suburb;
-        if (commune) adresseComplete += (adresseComplete ? ', ' : '') + commune;
-        
-        // Mettre à jour le formulaire
-        form.setFieldsValue({
-          region: region || 'Grand Casablanca-Settat',
-          province: province || 'Casablanca',
-          commune: commune || '',
-          adresse_generee: adresseComplete || data.display_name || '',
-        });
-        
-        message.success('Adresse récupérée avec succès');
-        console.log('📍 Adresse récupérée:', data);
-      } else {
-        message.warning('Impossible de récupérer l\'adresse pour cette position');
-      }
-    } catch (error) {
-      console.error('Erreur de géolocalisation inverse:', error);
-      message.error('Erreur lors de la récupération de l\'adresse');
-    } finally {
-      setLoadingAddress(false);
-    }
-  };
-
   const handleSubmit = (values) => {
     // Validation : vérifier que les champs requis sont remplis
     if (!values.latitude || !values.longitude) {
@@ -169,7 +229,7 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
     onSubmit(formData);
   };
 
-  // Gérer la sélection sur la carte avec géolocalisation inverse
+  // Gérer la sélection sur la carte
   const handleLocationSelect = (location) => {
     setSelectedLocation(location);
     form.setFieldsValue({
@@ -177,9 +237,6 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
       longitude: location.lng,
     });
     message.success('Localisation sélectionnée sur la carte');
-    
-    // Déclencher la géolocalisation inverse automatiquement
-    reverseGeocode(location.lat, location.lng);
   };
 
   // Gérer le changement manuel des coordonnées
@@ -200,19 +257,6 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
     if (newLat && newLng && !isNaN(newLat) && !isNaN(newLng)) {
       setSelectedLocation({ lat: newLat, lng: newLng });
     }
-  };
-
-  // Bouton pour déclencher manuellement la géolocalisation inverse
-  const handleReverseGeocodeClick = () => {
-    const lat = form.getFieldValue('latitude');
-    const lng = form.getFieldValue('longitude');
-    
-    if (!lat || !lng) {
-      message.warning('Veuillez d\'abord saisir les coordonnées GPS');
-      return;
-    }
-    
-    reverseGeocode(lat, lng);
   };
 
   const uploadProps = {
@@ -293,11 +337,8 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
         <Panel 
           header={<strong style={{ fontSize: '15px' }}>1. Adresse et Localisation</strong>}
           key="1"
-          style={{ 
-            borderBottom: '1px solid #f0f0f0'
-          }}
+          style={{ borderBottom: '1px solid #f0f0f0' }}
         >
-
           {/* CARTE INTERACTIVE */}
           <div style={{ 
             background: '#fafafa',
@@ -347,28 +388,49 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
             </Col>
           </Row>
 
-          {/* Bouton pour géolocalisation inverse manuelle */}
-          <div style={{ marginBottom: '16px' }}>
-            <Button 
-              icon={<EnvironmentOutlined />}
-              onClick={handleReverseGeocodeClick}
-              loading={loadingAddress}
-              type="dashed"
-              block
-            >
-              {loadingAddress ? 'Récupération de l\'adresse...' : 'Obtenir l\'adresse depuis les coordonnées'}
-            </Button>
-          </div>
-
+          {/* ✅ CHAMPS SELECT HIÉRARCHIQUES */}
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="region" label="Région">
-                <Input placeholder="Ex: Casablanca-Settat" />
+              <Form.Item 
+                name="region" 
+                label="Région"
+                rules={[{ required: true, message: 'Région requise' }]}
+              >
+                <Select 
+                  placeholder="Sélectionner une région"
+                  onChange={handleRegionChange}
+                  loading={loadingGeographicData}
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {regions.map(region => (
+                    <Option key={region} value={region}>
+                      {region}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="province" label="Province">
-                <Input placeholder="Ex: Casablanca" />
+              <Form.Item 
+                name="province" 
+                label="Province"
+                rules={[{ required: true, message: 'Province requise' }]}
+              >
+                <Select 
+                  placeholder="Sélectionner une province"
+                  onChange={handleProvinceChange}
+                  disabled={!selectedRegion}
+                  loading={loadingProvinces}
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {provinces.map(province => (
+                    <Option key={province} value={province}>
+                      {province}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -377,13 +439,25 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
                 label="Commune" 
                 rules={[{ required: true, message: 'Commune requise' }]}
               >
-                <Input placeholder="Ex: Anfa" />
+                <Select 
+                  placeholder="Sélectionner une commune"
+                  disabled={!selectedProvince}
+                  loading={loadingCommunes}
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {communes.map(commune => (
+                    <Option key={commune} value={commune}>
+                      {commune}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
           </Row>
 
           <Form.Item name="adresse_generee" label="Adresse complète">
-            <TextArea rows={2} placeholder="Adresse détaillée du bien (remplie automatiquement)" />
+            <TextArea rows={2} placeholder="Adresse détaillée du bien" />
           </Form.Item>
         </Panel>
 
