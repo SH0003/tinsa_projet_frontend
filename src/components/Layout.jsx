@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import logo from "../assets/logotinsa.png";
 import { useNavigate } from "react-router-dom";
 import { 
   SettingOutlined 
@@ -57,13 +56,7 @@ const StyledMenu = styled(Menu)`
   }
 `;
 
-const StyledFooter = styled.div`
-  text-align: center;
-  background: #f0f2f5;
-  padding: 15px;
-  font-weight: 500;
-  color: #002140;
-`;
+
 
 const CustomLayout = ({ children }) => {
   const navigate = useNavigate();
@@ -117,10 +110,7 @@ const CustomLayout = ({ children }) => {
       
       {/* 📌 NAVBAR */}
       <StyledHeader>
-        {/* 📌 LOGO */}
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <img src={logo} alt="Logo" style={{ height: "80px" }} />
-        </div>
+        
 
         {/* 📌 MENU NAVIGATION */}
         <StyledMenu 

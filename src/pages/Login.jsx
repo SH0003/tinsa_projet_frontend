@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "../utils/axios";
-import logo from "../assets/logotinsa.png";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
@@ -138,15 +137,6 @@ const Login = () => {
       zIndex: 2,
       animation: "fadeIn 0.6s ease-out forwards",
     },
-    logoContainer: {
-      marginBottom: "1.5rem",
-      display: "flex",
-      justifyContent: "center",
-    },
-    logo: {
-      height: "90px",
-      filter: "drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))",
-    },
     title: {
       fontSize: "1.75rem",
       fontWeight: "700",
@@ -268,9 +258,6 @@ const Login = () => {
       <div style={styles.backgroundCircle2}></div>
       
       <div style={styles.card}>
-        <div style={styles.logoContainer}>
-          <img src={logo} alt="Logo" style={styles.logo} />
-        </div>
         
         <h1 style={styles.title}>Bienvenue</h1>
         
