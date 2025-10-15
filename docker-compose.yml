@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  tinsa-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tinsa-frontend
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - tinsa-network
+
+networks:
+  tinsa-network:
+    driver: bridge
+
