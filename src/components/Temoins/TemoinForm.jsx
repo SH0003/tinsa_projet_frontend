@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, InputNumber, Button, Row, Col, Upload, message, Collapse, Spin } from 'antd';
+import { Form, Input, Select, InputNumber, Button, Row, Col, Upload, message, Collapse, Spin, Checkbox } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import axios from '../../utils/axios';
 import TemoinMapSelector from './TemoinMapSelector';
@@ -512,19 +512,27 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
 
           <Row gutter={16} style={{ marginTop: '16px' }}>
             <Col span={24}>
-              <Form.Item name="affectations_urbanistiques" label="Affectations urbanistiques">
-                <Checkbox.Group>
-                  <Row gutter={[8, 8]}>
-                    {options.affectations_urbanistiques && options.affectations_urbanistiques.map(opt => (
-                      <Col span={8} key={opt.value}>
-                        <Checkbox value={opt.value}>{opt.label}</Checkbox>
-                      </Col>
-                    ))}
-                  </Row>
-                </Checkbox.Group>
+              <Form.Item
+                name="affectations_urbanistiques"
+                label="Affectations urbanistiques"
+              >
+                <Select
+                  mode="multiple"
+                  placeholder="Sélectionnez les affectations urbanistiques"
+                  allowClear
+                  optionFilterProp="label"
+                  style={{ width: '100%' }}
+                  options={
+                    options.affectations_urbanistiques?.map(opt => ({
+                      label: opt.label,
+                      value: opt.value,
+                    })) || []
+                  }
+                />
               </Form.Item>
             </Col>
           </Row>
+
 
           <Row gutter={16}>
             <Col span={12}>
@@ -614,7 +622,7 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
               </Form.Item>
             </Col>
           </Row>
-          
+
         </Panel>
 
         {/* ==================== SECTION 4 : CONSTRUCTION ==================== */}

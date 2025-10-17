@@ -588,6 +588,19 @@ const GestionTemoins = () => {
       width: 150,
     },
     {
+      title: 'Statut',
+      key: 'status',
+      dataIndex: 'is_validated',
+      width: 100,
+      render: (isValidated) => (
+        isValidated ? (
+          <Tag color="success" style={{ textAlign: 'center' }}>Validé</Tag>
+        ) : (
+          <Tag color="warning" style={{ textAlign: 'center' }}>En attente</Tag>
+        )
+      ),
+    },
+    {
       title: 'Surface (m²)',
       key: 'surfaces',
       width: 150,
@@ -606,13 +619,7 @@ const GestionTemoins = () => {
       sorter: (a, b) => (parseFloat(a.valeur_offerte) || 0) - (parseFloat(b.valeur_offerte) || 0),
       render: (value) => value ? `${parseFloat(value).toLocaleString('fr-FR')} DH` : 'N/A',
     },
-    {
-      title: 'Standing',
-      dataIndex: 'niveau_standing',
-      key: 'niveau_standing',
-      width: 120,
-      render: (standing) => getLabel('niveau_standing', standing),
-    },
+    
     {
       title: 'Actions',
       key: 'actions',
@@ -673,19 +680,6 @@ const GestionTemoins = () => {
         );
       },
     },
-    {
-      title: 'Statut',
-      key: 'status',
-      dataIndex: 'is_validated',
-      width: 100,
-      render: (isValidated) => (
-        isValidated ? (
-          <Tag color="success" style={{ textAlign: 'center' }}>Validé</Tag>
-        ) : (
-          <Tag color="warning" style={{ textAlign: 'center' }}>En attente</Tag>
-        )
-      ),
-    },
   ];
 
   return (
@@ -697,7 +691,7 @@ const GestionTemoins = () => {
             <Col flex="auto">
               <Row gutter={[12, 12]}>
                 {/* Filtre État de validation */}
-                <Col xs={24} sm={12} md={8} lg={4}>
+                <Col xs={24} sm={12} md={8} lg={3}>
                   <Select
                     placeholder="État de validation"
                     style={{ width: '100%' }}
@@ -711,7 +705,7 @@ const GestionTemoins = () => {
                 </Col>
 
                 {/* Filtre Région */}
-                <Col xs={24} sm={12} md={8} lg={4}>
+                <Col xs={24} sm={12} md={8} lg={3}>
                   <Select
                     placeholder="Région"
                     style={{ width: '100%' }}
@@ -730,7 +724,7 @@ const GestionTemoins = () => {
                 </Col>
 
                 {/* Filtre Province */}
-                <Col xs={24} sm={12} md={8} lg={4}>
+                <Col xs={24} sm={12} md={8} lg={3}>
                   <Select
                     placeholder="Province"
                     style={{ width: '100%' }}
@@ -751,7 +745,7 @@ const GestionTemoins = () => {
                 </Col>
 
                 {/* Filtre Commune */}
-                <Col xs={24} sm={12} md={8} lg={4}>
+                <Col xs={24} sm={12} md={8} lg={3}>
                   <Select
                     placeholder="Commune"
                     style={{ width: '100%' }}
@@ -772,7 +766,7 @@ const GestionTemoins = () => {
                 </Col>
 
                 {/* Filtre Type d'opération */}
-                <Col xs={24} sm={12} md={8} lg={4}>
+                <Col xs={24} sm={12} md={8} lg={3}>
                   <Select
                     placeholder="Type d'opération"
                     style={{ width: '100%' }}
@@ -790,7 +784,7 @@ const GestionTemoins = () => {
                 </Col>
 
                 {/* Filtre Typologie */}
-                <Col xs={24} sm={12} md={8} lg={4}>
+                <Col xs={24} sm={12} md={8} lg={3}>
                   <Select
                     placeholder="Typologie"
                     style={{ width: '100%' }}
@@ -821,7 +815,7 @@ const GestionTemoins = () => {
                   type="primary"
                   icon={<PlusOutlined />}
                   onClick={handleCreate}
-                  size="large"
+                  size="medium"
                 >
                   Nouveau Témoin
                 </Button>
