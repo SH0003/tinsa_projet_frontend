@@ -20,6 +20,8 @@ const GestionTemoins = () => {
   const [form] = Form.useForm();
   const userRole = localStorage.getItem('userRole');
 
+  const [filterValidation, setFilterValidation] = useState(null);
+
   const [options, setOptions] = useState({
     type_operation: [],
     orientation: [],
@@ -51,7 +53,7 @@ const GestionTemoins = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [temoins, filterRegion, filterProvince, filterCommune, filterTypeOperation, filterTypologie]);
+  }, [temoins, filterRegion, filterProvince, filterCommune, filterTypeOperation, filterTypologie, filterValidation]);
 
   const getFullImageUrl = (url) => {
     if (!url) return '';
@@ -162,6 +164,11 @@ const GestionTemoins = () => {
     // Filtre par Typologie
     if (filterTypologie) {
       filtered = filtered.filter(t => t.typologie_bien === filterTypologie);
+    }
+
+    // Filtre par État de validation
+    if (filterValidation !== null) {
+      filtered = filtered.filter(t => t.is_validated === filterValidation);
     }
 
     setFilteredTemoins(filtered);
@@ -665,6 +672,19 @@ const GestionTemoins = () => {
         );
       },
     },
+    {
+      title: 'Statut',
+      key: 'status',
+      dataIndex: 'is_validated',
+      width: 100,
+      render: (isValidated) => (
+        isValidated ? (
+          <Tag color="success" style={{ textAlign: 'center' }}>Validé</Tag>
+        ) : (
+          <Tag color="warning" style={{ textAlign: 'center' }}>En attente</Tag>
+        )
+      ),
+    },
   ];
 
   return (
@@ -675,6 +695,20 @@ const GestionTemoins = () => {
           <Row gutter={[16, 16]} align="middle" justify="space-between">
             <Col flex="auto">
               <Row gutter={[12, 12]}>
+                {/* Filtre État de validation */}
+                <Col xs={24} sm={12} md={8} lg={4}>
+                  <Select
+                    placeholder="État de validation"
+                    style={{ width: '100%' }}
+                    allowClear
+                    value={filterValidation}
+                    onChange={setFilterValidation}
+                  >
+                    <Option value={true}>Validé</Option>
+                    <Option value={false}>En attente</Option>
+                  </Select>
+                </Col>
+                
                 {/* Filtre Région */}
                 <Col xs={24} sm={12} md={8} lg={4}>
                   <Select
