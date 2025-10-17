@@ -205,6 +205,7 @@ const GestionTemoins = () => {
     setFilterCommune(null);
     setFilterTypeOperation(null);
     setFilterTypologie(null);
+    setFilterValidation(null);
     setProvinces([]);
     setCommunes([]);
   };
@@ -708,7 +709,7 @@ const GestionTemoins = () => {
                     <Option value={false}>En attente</Option>
                   </Select>
                 </Col>
-                
+
                 {/* Filtre Région */}
                 <Col xs={24} sm={12} md={8} lg={4}>
                   <Select
