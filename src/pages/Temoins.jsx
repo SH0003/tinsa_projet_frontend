@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { CheckOutlined } from '@ant-design/icons';
-import { Table, Button, Modal, Form, message, Space, Tag, Card, Select, Row, Col, Descriptions, Divider, Popconfirm, Input } from 'antd';
+import { Table, Button, Modal, Form, message, Space, Tag, Card, Select, Row, Col, Descriptions, Divider, Popconfirm, Input, DatePicker } from 'antd';
 import { PlusOutlined, EditOutlined, EyeOutlined, DeleteOutlined, CloseOutlined } from '@ant-design/icons';
 import axios from '../utils/axios';
+import dayjs from 'dayjs';
 import TemoinForm from '../components/Temoins/TemoinForm';
 import TemoinMap from '../components/Temoins/TemoinMap';
 import './GestionTemoins.css';
@@ -38,12 +39,16 @@ const GestionTemoins = () => {
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingCommunes, setLoadingCommunes] = useState(false);
 
-  // ✅ MODIFIÉ : États pour les 5 filtres
+  //  États pour les 5 filtres
   const [filterRegion, setFilterRegion] = useState(null);
   const [filterProvince, setFilterProvince] = useState(null);
   const [filterCommune, setFilterCommune] = useState(null);
   const [filterTypeOperation, setFilterTypeOperation] = useState(null);
   const [filterTypologie, setFilterTypologie] = useState(null);
+
+    // filtre date transaction
+  const [filterDateStart, setFilterDateStart] = useState(null);
+  const [filterDateEnd, setFilterDateEnd] = useState(null);
 
   useEffect(() => {
     fetchOptions();
@@ -53,7 +58,7 @@ const GestionTemoins = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [temoins, filterRegion, filterProvince, filterCommune, filterTypeOperation, filterTypologie, filterValidation]);
+  }, [temoins, filterRegion, filterProvince, filterCommune, filterTypeOperation, filterTypologie, filterValidation, filterDateStart, filterDateEnd]);
 
   const getFullImageUrl = (url) => {
     if (!url) return '';
@@ -171,6 +176,16 @@ const GestionTemoins = () => {
       filtered = filtered.filter(t => t.is_validated === filterValidation);
     }
 
+    if (filterDateStart) {
+      const startDate = filterDateStart.startOf('day').toDate();
+      filtered = filtered.filter(t => t.date_transaction && new Date(t.date_transaction) >= startDate);
+    }
+
+    // Filtre par date de fin
+    if (filterDateEnd) {
+      const endDate = filterDateEnd.endOf('day').toDate();
+      filtered = filtered.filter(t => t.date_transaction && new Date(t.date_transaction) <= endDate);
+    }
     setFilteredTemoins(filtered);
   };
 
@@ -206,6 +221,8 @@ const GestionTemoins = () => {
     setFilterTypeOperation(null);
     setFilterTypologie(null);
     setFilterValidation(null);
+    setFilterDateStart(null);
+    setFilterDateEnd(null);
     setProvinces([]);
     setCommunes([]);
   };
@@ -381,6 +398,9 @@ const GestionTemoins = () => {
                   }>
                     {getLabel('type_operation', record.type_operation)}
                   </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Date Transaction">
+                  {record.date_transaction ? new Date(record.date_transaction).toLocaleDateString('fr-FR') : 'N/A'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Typologie">
                   {record.typologie_bien || 'N/A'}
@@ -601,6 +621,13 @@ const GestionTemoins = () => {
       ),
     },
     {
+      title: 'Date Transaction',
+      dataIndex: 'date_transaction',
+      key: 'date_transaction',
+      width: 120,
+      render: (date) => date ? new Date(date).toLocaleDateString('fr-FR') : 'N/A',
+    },
+    {
       title: 'Surface (m²)',
       key: 'surfaces',
       width: 150,
@@ -798,6 +825,27 @@ const GestionTemoins = () => {
                       </Option>
                     ))}
                   </Select>
+                </Col>
+
+                <Col xs={24} sm={12} md={8} lg={4}>
+                  <DatePicker
+                    placeholder="Date début"
+                    style={{ width: '100%' }}
+                    allowClear
+                    value={filterDateStart}
+                    onChange={setFilterDateStart}
+                    format="DD/MM/YYYY"
+                  />
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={4}>
+                  <DatePicker
+                    placeholder="Date fin"
+                    style={{ width: '100%' }}
+                    allowClear
+                    value={filterDateEnd}
+                    onChange={setFilterDateEnd}
+                    format="DD/MM/YYYY"
+                  />
                 </Col>
 
                 {/* Bouton Réinitialiser */}
