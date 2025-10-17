@@ -578,7 +578,7 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
         >
           <Row gutter={16}>
             <Col span={24}>
-              {/* ✅ Parcelle grisée pour Appartement/Bureau/Local Commercial */}
+              {/*  Parcelle grisée pour Appartement/Bureau/Local Commercial */}
               <Form.Item name="parcelle" label="Surface de la parcelle (m²)">
                 <InputNumber 
                   style={{ width: '100%' }} 
@@ -600,6 +600,21 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
               </Form.Item>
             </Col>
           </Row>
+
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item name="surface_shon" label="Surface SHON (m²)">
+                <InputNumber 
+                  style={{ width: '100%' }} 
+                  min={0}
+                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+                  parser={value => value.replace(/\s/g, '')}
+                  placeholder="Surface SHON du bâtiment"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          
         </Panel>
 
         {/* ==================== SECTION 4 : CONSTRUCTION ==================== */}
