@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CheckOutlined } from '@ant-design/icons';
-import { Table, Button, Modal, Form, message, Space, Tag, Card, Select, Row, Col, Descriptions, Divider, Popconfirm, Input, DatePicker } from 'antd';
-import { PlusOutlined, EditOutlined, EyeOutlined, DeleteOutlined, CloseOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, message, Space, Tag, Card, Select, Row, Col, Descriptions, Divider, Popconfirm, DatePicker } from 'antd';
+import { PlusOutlined, EditOutlined, EyeOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import axios from '../utils/axios';
 import dayjs from 'dayjs';
 import TemoinForm from '../components/Temoins/TemoinForm';
@@ -11,8 +11,12 @@ import './GestionTemoins.css';
 const { Option } = Select;
 
 const GestionTemoins = () => {
+  // États de données
   const [temoins, setTemoins] = useState([]);
   const [filteredTemoins, setFilteredTemoins] = useState([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  
+  // États d'interface
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTemoin, setSelectedTemoin] = useState(null);
@@ -21,8 +25,17 @@ const GestionTemoins = () => {
   const [form] = Form.useForm();
   const userRole = localStorage.getItem('userRole');
 
+  // États pour les filtres
   const [filterValidation, setFilterValidation] = useState(null);
+  const [filterRegion, setFilterRegion] = useState(null);
+  const [filterProvince, setFilterProvince] = useState(null);
+  const [filterCommune, setFilterCommune] = useState(null);
+  const [filterTypeOperation, setFilterTypeOperation] = useState(null);
+  const [filterTypologie, setFilterTypologie] = useState(null);
+  const [filterDateStart, setFilterDateStart] = useState(null);
+  const [filterDateEnd, setFilterDateEnd] = useState(null);
 
+  // États pour les options
   const [options, setOptions] = useState({
     type_operation: [],
     orientation: [],
@@ -30,65 +43,50 @@ const GestionTemoins = () => {
     etat_conservation: [],
     source_temoin: []
   });
-  const [loadingOptions, setLoadingOptions] = useState(true);
-
-  // ✅ NOUVEAUX États pour les données géographiques
   const [regions, setRegions] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [communes, setCommunes] = useState([]);
+
+  // États pour les chargements
+  const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingCommunes, setLoadingCommunes] = useState(false);
 
-  //  États pour les 5 filtres
-  const [filterRegion, setFilterRegion] = useState(null);
-  const [filterProvince, setFilterProvince] = useState(null);
-  const [filterCommune, setFilterCommune] = useState(null);
-  const [filterTypeOperation, setFilterTypeOperation] = useState(null);
-  const [filterTypologie, setFilterTypologie] = useState(null);
+  // État pour la pagination
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showTotal: (total) => `Total: ${total} témoins`
+  });
 
-    // filtre date transaction
-  const [filterDateStart, setFilterDateStart] = useState(null);
-  const [filterDateEnd, setFilterDateEnd] = useState(null);
+  // Extraire typologies uniques pour le filtre
+  const uniqueTypologies = React.useMemo(() => 
+    [...new Set(temoins.map(t => t.typologie_bien).filter(Boolean))],
+    [temoins]
+  );
 
-  useEffect(() => {
-    fetchOptions();
-    fetchTemoins();
-    fetchRegions();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [temoins, filterRegion, filterProvince, filterCommune, filterTypeOperation, filterTypologie, filterValidation, filterDateStart, filterDateEnd]);
-
-  const getFullImageUrl = (url) => {
-    if (!url) return '';
+  // Fonction pour charger les options (ne change pas souvent)
+  const fetchOptions = useCallback(async () => {
+    if (options.type_operation.length > 0) return; // Ne pas recharger si déjà chargé
     
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    
-    if (url.startsWith('/media/')) {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      return `${apiUrl}${url}`;
-    }
-    
-    return url;
-  };
-
-  const fetchOptions = async () => {
     try {
+      setLoadingOptions(true);
       const response = await axios.get('/api/temoins/options/');
       setOptions(response.data);
-      setLoadingOptions(false);
     } catch (error) {
       console.error('Erreur lors du chargement des options:', error);
       message.error('Erreur lors du chargement des options');
+    } finally {
       setLoadingOptions(false);
     }
-  };
+  }, [options.type_operation.length]);
 
-  // ✅ NOUVEAU : Récupérer les régions
-  const fetchRegions = async () => {
+  // Fonction pour charger les régions (ne change pas souvent)
+  const fetchRegions = useCallback(async () => {
+    if (regions.length > 0) return; // Ne pas recharger si déjà chargé
+    
     try {
       const response = await axios.get('/api/geographic-data/?action=regions');
       setRegions(response.data.regions);
@@ -96,10 +94,10 @@ const GestionTemoins = () => {
       console.error('Erreur lors du chargement des régions:', error);
       message.error('Erreur lors du chargement des régions');
     }
-  };
+  }, [regions.length]);
 
-  // ✅ NOUVEAU : Récupérer les provinces pour une région
-  const fetchProvinces = async (region) => {
+  // Fonction pour charger les provinces pour une région
+  const fetchProvinces = useCallback(async (region) => {
     setLoadingProvinces(true);
     try {
       const response = await axios.get(`/api/geographic-data/?action=provinces&region=${encodeURIComponent(region)}`);
@@ -110,10 +108,10 @@ const GestionTemoins = () => {
     } finally {
       setLoadingProvinces(false);
     }
-  };
+  }, []);
 
-  // ✅ NOUVEAU : Récupérer les communes pour une province
-  const fetchCommunes = async (region, province) => {
+  // Fonction pour charger les communes pour une province
+  const fetchCommunes = useCallback(async (region, province) => {
     setLoadingCommunes(true);
     try {
       const response = await axios.get(
@@ -126,25 +124,77 @@ const GestionTemoins = () => {
     } finally {
       setLoadingCommunes(false);
     }
-  };
+  }, []);
 
-  const fetchTemoins = async () => {
+  // Fonction optimisée pour charger les témoins - avec pagination côté serveur
+  const fetchTemoins = useCallback(async (page = 1, pageSize = 10) => {
+    if (loading) return; // Éviter les appels multiples
+    
     setLoading(true);
     try {
-      const response = await axios.get('/api/superadmin/temoins/');
-      setTemoins(response.data);
-      setFilteredTemoins(response.data);
+      console.log(`Chargement des témoins: page ${page}, taille ${pageSize}`);
+      const response = await axios.get(`/api/superadmin/temoins/?page=${page}&page_size=${pageSize}`);
+      
+      // Vérifier si la réponse est paginée ou non
+      if (response.data.results && response.data.total !== undefined) {
+        // Réponse paginée
+        setTemoins(response.data.results);
+        setFilteredTemoins(response.data.results);
+        setPagination({
+          ...pagination,
+          current: page,
+          pageSize: pageSize,
+          total: response.data.total
+        });
+      } else {
+        // Format ancien - réponse non paginée
+        setTemoins(response.data);
+        setFilteredTemoins(response.data);
+        setPagination({
+          ...pagination,
+          total: response.data.length
+        });
+      }
+      
+      setIsDataLoaded(true);
     } catch (error) {
+      console.error('Erreur lors du chargement des témoins:', error);
       message.error('Erreur lors du chargement des témoins');
-      console.error(error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, pagination]);
 
-  // ✅ MODIFIÉ : Application des 5 filtres
-  const applyFilters = () => {
+  // Gestionnaire de changement de page pour la table
+  const handleTableChange = (pagination) => {
+    fetchTemoins(pagination.current, pagination.pageSize);
+  };
+  const { current, pageSize } = pagination;
+  // Effet initial pour charger les données au démarrage
+  useEffect(() => {
+    if (!isDataLoaded) {
+      // Chargement parallèle des données statiques et des témoins
+      Promise.all([
+        fetchOptions(),
+        fetchRegions(),
+        fetchTemoins(current, pageSize)
+      ]).catch(error => {
+        console.error('Erreur lors du chargement initial:', error);
+      });
+    }
+  }, [fetchOptions, fetchRegions, fetchTemoins, isDataLoaded, current, pageSize]);
+
+  // Fonction pour appliquer les filtres localement (sans appel API)
+  const applyFilters = useCallback(() => {
+    if (temoins.length === 0) return;
+    
+    console.log('Application des filtres locaux');
     let filtered = [...temoins];
+
+    // Filtre par État de validation
+    if (filterValidation !== null) {
+      filtered = filtered.filter(t => t.is_validated === filterValidation);
+    }
 
     // Filtre par Région
     if (filterRegion) {
@@ -171,11 +221,7 @@ const GestionTemoins = () => {
       filtered = filtered.filter(t => t.typologie_bien === filterTypologie);
     }
 
-    // Filtre par État de validation
-    if (filterValidation !== null) {
-      filtered = filtered.filter(t => t.is_validated === filterValidation);
-    }
-
+    // Filtre par date de début
     if (filterDateStart) {
       const startDate = filterDateStart.startOf('day').toDate();
       filtered = filtered.filter(t => t.date_transaction && new Date(t.date_transaction) >= startDate);
@@ -186,10 +232,16 @@ const GestionTemoins = () => {
       const endDate = filterDateEnd.endOf('day').toDate();
       filtered = filtered.filter(t => t.date_transaction && new Date(t.date_transaction) <= endDate);
     }
-    setFilteredTemoins(filtered);
-  };
 
-  // ✅ NOUVEAU : Handler pour le changement de région
+    setFilteredTemoins(filtered);
+  }, [temoins, filterValidation, filterRegion, filterProvince, filterCommune, filterTypeOperation, filterTypologie, filterDateStart, filterDateEnd]);
+
+  // Appliquer les filtres quand les filtres changent
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
+  // Handler pour le changement de région
   const handleRegionFilterChange = (value) => {
     setFilterRegion(value);
     setFilterProvince(null);
@@ -202,7 +254,7 @@ const GestionTemoins = () => {
     }
   };
 
-  // ✅ NOUVEAU : Handler pour le changement de province
+  // Handler pour le changement de province
   const handleProvinceFilterChange = (value) => {
     setFilterProvince(value);
     setFilterCommune(null);
@@ -213,7 +265,7 @@ const GestionTemoins = () => {
     }
   };
 
-  // ✅ MODIFIÉ : Réinitialiser tous les filtres
+  // Réinitialiser tous les filtres
   const handleResetFilters = () => {
     setFilterRegion(null);
     setFilterProvince(null);
@@ -227,6 +279,12 @@ const GestionTemoins = () => {
     setCommunes([]);
   };
 
+  // Fonction pour rafraîchir manuellement les données
+  const handleRefresh = () => {
+    fetchTemoins(pagination.current, pagination.pageSize);
+  };
+
+  // Gestion de la création d'un nouveau témoin
   const handleCreate = () => {
     setEditMode(false);
     setSelectedTemoin(null);
@@ -234,13 +292,22 @@ const GestionTemoins = () => {
     setModalVisible(true);
   };
 
+  // Gestion de l'édition d'un témoin existant
   const handleEdit = (record) => {
     setEditMode(true);
     setSelectedTemoin(record);
-    form.setFieldsValue(record);
+    
+    // Préparer les données pour le formulaire
+    const formData = { ...record };
+    if (record.date_transaction) {
+      formData.date_transaction = dayjs(record.date_transaction);
+    }
+    
+    form.setFieldsValue(formData);
     setModalVisible(true);
   };
 
+  // Gestion de la suppression d'un témoin
   const handleDelete = async (record) => {
     try {
       await axios.delete(`/api/superadmin/temoins/${record.id}/`);
@@ -251,13 +318,15 @@ const GestionTemoins = () => {
         setExpandedRowKeys([]);
       }
       
-      fetchTemoins();
+      // Recharger les données après suppression
+      fetchTemoins(pagination.current, pagination.pageSize);
     } catch (error) {
       message.error('Erreur lors de la suppression');
       console.error(error);
     }
   };
 
+  // Gestion de la soumission du formulaire
   const handleSubmit = async (values) => {
     try {
       if (editMode) {
@@ -269,13 +338,16 @@ const GestionTemoins = () => {
       }
       setModalVisible(false);
       form.resetFields();
-      fetchTemoins();
+      
+      // Recharger les données après création/modification
+      fetchTemoins(pagination.current, pagination.pageSize);
     } catch (error) {
       message.error(editMode ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création');
       console.error(error);
     }
   };
 
+  // Gestion du clic sur une ligne de la table
   const handleRowClick = (record) => {
     setSelectedTemoin(record);
     if (expandedRowKeys.includes(record.id)) {
@@ -285,25 +357,184 @@ const GestionTemoins = () => {
     }
   };
 
+  // Utilitaire pour obtenir l'URL complète d'une image
+  const getFullImageUrl = (url) => {
+    if (!url) return '';
+    
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    if (url.startsWith('/media/')) {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      return `${apiUrl}${url}`;
+    }
+    
+    return url;
+  };
+
+  // Utilitaire pour obtenir le label d'une option
   const getLabel = (fieldName, value) => {
     if (!value || !options[fieldName]) return value || 'N/A';
     const option = options[fieldName].find(opt => opt.value === value);
     return option ? option.label : value;
   };
 
-  // ✅ NOUVEAU : Extraire les typologies uniques pour le filtre
-  const uniqueTypologies = [...new Set(temoins.map(t => t.typologie_bien).filter(Boolean))];
-
+  // Gestion de la validation d'un témoin
   const handleValidate = async (temoinId) => {
     try {
       await axios.post(`/api/temoins/${temoinId}/valider/`);
       message.success('Témoin validé avec succès');
-      fetchTemoins();
+      fetchTemoins(pagination.current, pagination.pageSize);
     } catch (error) {
       message.error(error.response?.data?.error || 'Erreur lors de la validation');
     }
   };
 
+  // Définition des colonnes du tableau
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 70,
+      sorter: (a, b) => a.id - b.id,
+    },
+    {
+      title: 'Localisation',
+      key: 'localisation',
+      width: 200,
+      render: (_, record) => (
+        <div>
+          <div><strong>{record.commune || 'N/A'}</strong></div>
+          <div style={{ fontSize: '12px', color: '#888' }}>
+            {record.province || 'N/A'} - {record.region || 'N/A'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Type d\'opération',
+      dataIndex: 'type_operation',
+      key: 'type_operation',
+      width: 150,
+      render: (type) => {
+        const colors = {
+          'offre_vente': 'blue',
+          'transaction_vente': 'green',
+          'location': 'orange',
+        };
+        return <Tag color={colors[type]}>{getLabel('type_operation', type)}</Tag>;
+      },
+    },
+    {
+      title: 'Typologie',
+      dataIndex: 'typologie_bien',
+      key: 'typologie_bien',
+      width: 150,
+    },
+    {
+      title: 'Statut',
+      key: 'status',
+      dataIndex: 'is_validated',
+      width: 100,
+      render: (isValidated) => (
+        isValidated ? (
+          <Tag color="success" style={{ textAlign: 'center' }}>Validé</Tag>
+        ) : (
+          <Tag color="warning" style={{ textAlign: 'center' }}>En attente</Tag>
+        )
+      ),
+    },
+    {
+      title: 'Date Transaction',
+      dataIndex: 'date_transaction',
+      key: 'date_transaction',
+      width: 120,
+      render: (date) => date ? new Date(date).toLocaleDateString('fr-FR') : 'N/A',
+    },
+    {
+      title: 'Surface (m²)',
+      key: 'surfaces',
+      width: 150,
+      render: (_, record) => (
+        <div>
+          <div><strong>Parcelle:</strong> {record.parcelle ? parseFloat(record.parcelle).toLocaleString('fr-FR') : 'N/A'}</div>
+          <div><strong>Vendable:</strong> {record.surface_vendable ? parseFloat(record.surface_vendable).toLocaleString('fr-FR') : 'N/A'}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Prix HT',
+      dataIndex: 'valeur_offerte',
+      key: 'valeur_offerte',
+      width: 120,
+      sorter: (a, b) => (parseFloat(a.valeur_offerte) || 0) - (parseFloat(b.valeur_offerte) || 0),
+      render: (value) => value ? `${parseFloat(value).toLocaleString('fr-FR')} DH` : 'N/A',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      fixed: 'right',
+      width: 130,
+      render: (_, record) => {
+        const userRole = localStorage.getItem('userRole');
+        
+        return (
+          <Space>
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRowClick(record);
+              }}
+              title="Voir les détails"
+            />
+            
+            {userRole === 'superadmin' && (
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(record);
+                }}
+                disabled={record.is_validated}
+                title="Modifier"
+              />
+            )}
+            
+            {userRole === 'superadmin' && (
+              <Popconfirm
+                title="Supprimer ce témoin"
+                description="Êtes-vous sûr de vouloir supprimer ce témoin ?"
+                onConfirm={(e) => {
+                  e?.stopPropagation();
+                  handleDelete(record);
+                }}
+                onCancel={(e) => e?.stopPropagation()}
+                okText="Oui"
+                cancelText="Non"
+                okButtonProps={{ danger: true }}
+              >
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => e.stopPropagation()}
+                  disabled={record.is_validated}
+                  title="Supprimer"
+                />
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
+    },
+  ];
+
+  // Définition du rendu pour les lignes expansibles
   const expandedRowRender = (record) => {
     const userRole = localStorage.getItem('userRole');
   
@@ -345,7 +576,7 @@ const GestionTemoins = () => {
               <Popconfirm
                 title="Supprimer ce témoin"
                 description="Êtes-vous sûr de vouloir supprimer ce témoin ?"
-                onConfirm={() => handleDelete(record.id)}
+                onConfirm={() => handleDelete(record)}
                 disabled={record.is_validated}
               >
                 <Button danger icon={<DeleteOutlined />} disabled={record.is_validated}>
@@ -356,6 +587,7 @@ const GestionTemoins = () => {
           </Col>
         </Row>
 
+        {/* Contenu de la ligne expansible (inchangé) */}
         <Row gutter={[24, 24]}>
           {/* Colonne 1 : Localisation */}
           <Col xs={24} lg={8}>
@@ -492,7 +724,7 @@ const GestionTemoins = () => {
                   >
                     <img
                       src={fullImageUrl}
-                      alt={`Image ${index + 1}`}
+                      alt={`Témoin n°${index + 1}`}
                       style={{
                         width: '150px',
                         height: '150px',
@@ -566,154 +798,12 @@ const GestionTemoins = () => {
     );
   };
 
-  const columns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 70,
-      sorter: (a, b) => a.id - b.id,
-    },
-    {
-      title: 'Localisation',
-      key: 'localisation',
-      width: 200,
-      render: (_, record) => (
-        <div>
-          <div><strong>{record.commune || 'N/A'}</strong></div>
-          <div style={{ fontSize: '12px', color: '#888' }}>
-            {record.province || 'N/A'} - {record.region || 'N/A'}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Type d\'opération',
-      dataIndex: 'type_operation',
-      key: 'type_operation',
-      width: 150,
-      render: (type) => {
-        const colors = {
-          'offre_vente': 'blue',
-          'transaction_vente': 'green',
-          'location': 'orange',
-        };
-        return <Tag color={colors[type]}>{getLabel('type_operation', type)}</Tag>;
-      },
-    },
-    {
-      title: 'Typologie',
-      dataIndex: 'typologie_bien',
-      key: 'typologie_bien',
-      width: 150,
-    },
-    {
-      title: 'Statut',
-      key: 'status',
-      dataIndex: 'is_validated',
-      width: 100,
-      render: (isValidated) => (
-        isValidated ? (
-          <Tag color="success" style={{ textAlign: 'center' }}>Validé</Tag>
-        ) : (
-          <Tag color="warning" style={{ textAlign: 'center' }}>En attente</Tag>
-        )
-      ),
-    },
-    {
-      title: 'Date Transaction',
-      dataIndex: 'date_transaction',
-      key: 'date_transaction',
-      width: 120,
-      render: (date) => date ? new Date(date).toLocaleDateString('fr-FR') : 'N/A',
-    },
-    {
-      title: 'Surface (m²)',
-      key: 'surfaces',
-      width: 150,
-      render: (_, record) => (
-        <div>
-          <div><strong>Parcelle:</strong> {record.parcelle ? parseFloat(record.parcelle).toLocaleString('fr-FR') : 'N/A'}</div>
-          <div><strong>Vendable:</strong> {record.surface_vendable ? parseFloat(record.surface_vendable).toLocaleString('fr-FR') : 'N/A'}</div>
-        </div>
-      ),
-    },
-    {
-      title: 'Prix HT',
-      dataIndex: 'valeur_offerte',
-      key: 'valeur_offerte',
-      width: 120,
-      sorter: (a, b) => (parseFloat(a.valeur_offerte) || 0) - (parseFloat(b.valeur_offerte) || 0),
-      render: (value) => value ? `${parseFloat(value).toLocaleString('fr-FR')} DH` : 'N/A',
-    },
-    
-    {
-      title: 'Actions',
-      key: 'actions',
-      fixed: 'right',
-      width: 130,
-      render: (_, record) => {
-        const userRole = localStorage.getItem('userRole');
-        
-        return (
-          <Space>
-            <Button
-              type="link"
-              icon={<EyeOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRowClick(record);
-              }}
-              title="Voir les détails"
-            />
-            
-            {userRole === 'superadmin' && (
-              <Button
-                type="link"
-                icon={<EditOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEdit(record);
-                }}
-                disabled={record.is_validated}
-                title="Modifier"
-              />
-            )}
-            
-            {userRole === 'superadmin' && (
-              <Popconfirm
-                title="Supprimer ce témoin"
-                description="Êtes-vous sûr de vouloir supprimer ce témoin ?"
-                onConfirm={(e) => {
-                  e?.stopPropagation();
-                  handleDelete(record);
-                }}
-                onCancel={(e) => e?.stopPropagation()}
-                okText="Oui"
-                cancelText="Non"
-                okButtonProps={{ danger: true }}
-              >
-                <Button
-                  type="link"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={(e) => e.stopPropagation()}
-                  disabled={record.is_validated}
-                  title="Supprimer"
-                />
-              </Popconfirm>
-            )}
-          </Space>
-        );
-      },
-    },
-  ];
-
+  // Rendu du composant
   return (
     <div className="gestion-temoins-container">
       <Card>
         <Space direction="vertical" style={{ width: '100%' }} size="large">
-          {/* ✅ MODIFIÉ : Nouvelle section de filtres avec 5 filtres */}
+          {/* Section filtres */}
           <Row gutter={[16, 16]} align="middle" justify="space-between">
             <Col flex="auto">
               <Row gutter={[12, 12]}>
@@ -858,16 +948,27 @@ const GestionTemoins = () => {
             </Col>
     
             <Col>
-              {userRole === 'superadmin' && (
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleCreate}
-                  size="medium"
+              {/* Boutons d'action */}
+              <Space>
+                <Button 
+                  onClick={handleRefresh} 
+                  icon={<ReloadOutlined />}
+                  title="Rafraîchir les données"
                 >
-                  Nouveau Témoin
+                  Rafraîchir
                 </Button>
-              )}
+
+                {userRole === 'superadmin' && (
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleCreate}
+                    size="medium"
+                  >
+                    Nouveau Témoin
+                  </Button>
+                )}
+              </Space>
             </Col>
           </Row>
 
@@ -878,11 +979,8 @@ const GestionTemoins = () => {
             rowKey="id"
             loading={loading}
             scroll={{ x: 1500 }}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) => `Total: ${total} témoins`,
-            }}
+            pagination={pagination}
+            onChange={handleTableChange}
             expandable={{
               expandedRowRender,
               expandedRowKeys,
@@ -920,7 +1018,7 @@ const GestionTemoins = () => {
         onCancel={() => {
           setModalVisible(false);
           form.resetFields();
-          }}
+        }}
         footer={null}
         width={1200}
         destroyOnClose
