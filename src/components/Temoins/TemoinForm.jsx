@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, InputNumber, Button, Row, Col, Upload, message, Collapse, Spin, Checkbox } from 'antd';
+import { Form, Input, Select, InputNumber, Button, Row, Col, Upload, message, Collapse, Spin, Checkbox, DatePicker } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import axios from '../../utils/axios';
 import TemoinMapSelector from './TemoinMapSelector';
@@ -213,6 +213,7 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
     // Ajouter les images au formulaire (préserver les URLs existantes)
     const formData = {
       ...values,
+      date_transaction: values.date_transaction ? values.date_transaction.format('YYYY-MM-DD') : null,
       images: images.map(img => {
         // Si l'image a déjà une URL (image existante), on la garde
         if (img.url && !img.url.startsWith('data:image')) {
@@ -506,6 +507,48 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
                   <Option value="Terrain">Terrain</Option>
                   <Option value="Autre">Autre</Option>
                 </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16} style={{ marginTop: '16px' }}>
+            <Col span={12}>
+              <Form.Item 
+                name="date_transaction" 
+                label="Date Transaction / Offre"
+              >
+                <DatePicker 
+                  style={{ width: '100%' }} 
+                  format="DD/MM/YYYY" 
+                  placeholder="Sélectionner une date"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item 
+                name="titre_foncier" 
+                label="Titre Foncier"
+              >
+                <Input placeholder="Numéro du titre foncier" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item 
+                name="registre" 
+                label="Registre"
+              >
+                <Input placeholder="Numéro de registre" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item 
+                name="conservation_fonciere" 
+                label="Conservation Foncière"
+              >
+                <Input placeholder="Nom de la conservation foncière" />
               </Form.Item>
             </Col>
           </Row>
