@@ -510,6 +510,22 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
             </Col>
           </Row>
 
+          <Row gutter={16} style={{ marginTop: '16px' }}>
+            <Col span={24}>
+              <Form.Item name="affectations_urbanistiques" label="Affectations urbanistiques">
+                <Checkbox.Group>
+                  <Row gutter={[8, 8]}>
+                    {options.affectations_urbanistiques && options.affectations_urbanistiques.map(opt => (
+                      <Col span={8} key={opt.value}>
+                        <Checkbox value={opt.value}>{opt.label}</Checkbox>
+                      </Col>
+                    ))}
+                  </Row>
+                </Checkbox.Group>
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="orientation" label="Orientation">
