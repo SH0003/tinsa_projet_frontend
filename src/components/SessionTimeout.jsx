@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const INACTIVITY_TIMEOUT = 60 * 60 * 1000;
-const TOKEN_CHECK_INTERVAL = 60 * 1000; 
+const TOKEN_CHECK_INTERVAL = 60 * 60 *1000; 
 
 const SessionTimeout = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const SessionTimeout = () => {
     try {
       // Décodage du payload JWT
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const expiry = payload.exp * 1000; // Convertir en millisecondes
+      const expiry = payload.exp * 1000; 
       const currentTime = Date.now();
       
       // Si le token est expiré
