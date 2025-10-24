@@ -19,6 +19,9 @@ RUN npm run build
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
 
+# Remove default nginx configuration
+RUN rm /etc/nginx/conf.d/default.conf
+
 # Copy built assets from build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
