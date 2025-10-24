@@ -19,14 +19,14 @@ export const getImageUrl = (imagePath) => {
   
   // ✅ Si le chemin commence par /media/ (développement)
   if (imagePath.startsWith('/media/')) {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    const apiUrl = process.env.REACT_APP_ENV === 'production' ? 'http://88.223.95.155:8060' : 'http://localhost:8000';
     const fullUrl = `${apiUrl}${imagePath}`;
     console.log('✅ imageHelper - URL locale:', fullUrl);
     return fullUrl;
   }
   
   // Cas par défaut (ne devrait jamais arriver)
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const apiUrl = process.env.REACT_APP_ENV === 'production' ? 'http://88.223.95.155:8060' : 'http://localhost:8000';
   const fullUrl = `${apiUrl}/media/${imagePath}`;
   console.log('⚠️ imageHelper - URL par défaut:', fullUrl);
   return fullUrl;
