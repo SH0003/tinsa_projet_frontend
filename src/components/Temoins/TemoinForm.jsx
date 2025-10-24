@@ -160,6 +160,7 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
           // Construire l'URL complète avec le domaine backend
           let fullUrl = url;
           if (url.startsWith('/media/')) {
+            console.log(process.env.REACT_APP_ENV)
             const apiUrl = process.env.REACT_APP_ENV === 'production' ? 'http://88.223.95.155:8060' : 'http://localhost:8000';
             fullUrl = `${apiUrl}${url}`;
           }
