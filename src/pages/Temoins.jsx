@@ -192,7 +192,7 @@ const GestionTemoins = () => {
     }
     
     if (url.startsWith('/media/')) {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const apiUrl = process.env.REACT_APP_ENV === 'production' ? 'http://88.223.95.155:8060' : 'http://localhost:8000';
       return `${apiUrl}${url}`;
     }
     
