@@ -136,19 +136,6 @@ const getStatusColor = (statut) => {
 };
 
 const Dossiers = () => {
-  // Vérifier le rôle utilisateur
-  const userRole = localStorage.getItem("userRole");
-  
-  // Si l'utilisateur n'a pas le rôle developpement, rediriger
-  if (userRole !== 'developpement') {
-    return (
-      <div style={{ padding: "50px", textAlign: "center" }}>
-        <h2>Accès restreint</h2>
-        <p>Cette page est uniquement accessible aux développeurs.</p>
-      </div>
-    );
-  }
-  
   const [creationForm] = Form.useForm();
   const [filterForm] = Form.useForm();
   const [viewMode, setViewMode] = useState("list");
