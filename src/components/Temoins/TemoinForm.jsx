@@ -215,8 +215,19 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
       ...values,
       date_transaction: values.date_transaction ? values.date_transaction.format('YYYY-MM-DD') : null,
       images: images.map(img => {
-        // Si l'image a déjà une URL (image existante), on la garde
+        // Si l'image a déjà une URL (image existante), normaliser pour envoyer uniquement le chemin relatif
         if (img.url && !img.url.startsWith('data:image')) {
+          // Si c'est une URL complète avec domaine, extraire uniquement le chemin
+          if (img.url.startsWith('http://') || img.url.startsWith('https://')) {
+            const urlObj = new URL(img.url);
+            // Si le chemin commence par /media/, on retourne uniquement le chemin
+            if (urlObj.pathname.startsWith('/media/')) {
+              return urlObj.pathname;
+            }
+            // Sinon, on retourne l'URL complète (cas Cloudinary par exemple)
+            return img.url;
+          }
+          // Si c'est déjà un chemin relatif, on le garde
           return img.url;
         }
         // Sinon c'est une nouvelle image en base64
@@ -272,14 +283,25 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
       }
     },
     beforeUpload: (file) => {
+      // Vérifier le nombre maximum d'images (15)
+      if (images.length >= 15) {
+        message.error('Vous ne pouvez ajouter que 15 images maximum!');
+        return false;
+      }
+
+      // Vérifier que c'est une image
       const isImage = file.type.startsWith('image/');
       if (!isImage) {
         message.error('Vous ne pouvez télécharger que des images!');
         return false;
       }
-      const isLt5M = file.size / 1024 / 1024 < 5;
+
+      // Vérifier la taille (5MB maximum)
+      const maxSize = 5 * 1024 * 1024; // 5MB en bytes
+      const isLt5M = file.size <= maxSize;
       if (!isLt5M) {
-        message.error('L\'image doit faire moins de 5MB!');
+        const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+        message.error(`L'image "${file.name}" fait ${fileSizeMB}MB. La taille maximum autorisée est de 5MB!`);
         return false;
       }
 
@@ -841,13 +863,15 @@ const TemoinForm = ({ form, onSubmit, onCancel, editMode }) => {
 
           <Form.Item label="Images">
             <Upload {...uploadProps} listType="picture-card" multiple>
-              <div>
-                <UploadOutlined />
-                <div style={{ marginTop: 8 }}>Ajouter</div>
-              </div>
+              {images.length < 15 && (
+                <div>
+                  <UploadOutlined />
+                  <div style={{ marginTop: 8 }}>Ajouter</div>
+                </div>
+              )}
             </Upload>
             <small style={{ color: '#888', display: 'block', marginTop: '8px' }}>
-              Maximum 5MB par image. {editMode && images.length > 0 && `${images.length} image(s) actuelle(s)`}
+              Maximum 15 images, 5MB par image. {images.length > 0 && `${images.length}/15 image(s) ajoutée(s)`}
             </small>
           </Form.Item>
         </Panel>

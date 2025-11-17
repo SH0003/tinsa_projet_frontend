@@ -67,8 +67,46 @@ export const useTemoins = () => {
       message.success('Témoin créé avec succès');
       return true;
     } catch (error) {
-      message.error('Erreur lors de la création');
-      console.error(error);
+      // Extraire le message d'erreur détaillé
+      let errorMessage = 'Erreur lors de la création du témoin';
+      
+      if (error.response) {
+        // Erreur de réponse du serveur
+        const errorData = error.response.data;
+        
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.non_field_errors) {
+          errorMessage = Array.isArray(errorData.non_field_errors) 
+            ? errorData.non_field_errors.join(', ') 
+            : errorData.non_field_errors;
+        } else {
+          // Extraire les erreurs de validation par champ
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, errors]) => {
+              const errorText = Array.isArray(errors) ? errors.join(', ') : errors;
+              return `${field}: ${errorText}`;
+            })
+            .join(' | ');
+          
+          if (fieldErrors) {
+            errorMessage = `Erreurs de validation: ${fieldErrors}`;
+          } else {
+            errorMessage = `Erreur ${error.response.status}: ${error.response.statusText}`;
+          }
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      message.error(errorMessage, 5); // Afficher pendant 5 secondes
+      console.error('Erreur détaillée:', error);
       return false;
     }
   }, []);
@@ -79,8 +117,46 @@ export const useTemoins = () => {
       message.success('Témoin mis à jour avec succès');
       return true;
     } catch (error) {
-      message.error('Erreur lors de la mise à jour');
-      console.error(error);
+      // Extraire le message d'erreur détaillé
+      let errorMessage = 'Erreur lors de la mise à jour du témoin';
+      
+      if (error.response) {
+        // Erreur de réponse du serveur
+        const errorData = error.response.data;
+        
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.non_field_errors) {
+          errorMessage = Array.isArray(errorData.non_field_errors) 
+            ? errorData.non_field_errors.join(', ') 
+            : errorData.non_field_errors;
+        } else {
+          // Extraire les erreurs de validation par champ
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, errors]) => {
+              const errorText = Array.isArray(errors) ? errors.join(', ') : errors;
+              return `${field}: ${errorText}`;
+            })
+            .join(' | ');
+          
+          if (fieldErrors) {
+            errorMessage = `Erreurs de validation: ${fieldErrors}`;
+          } else {
+            errorMessage = `Erreur ${error.response.status}: ${error.response.statusText}`;
+          }
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      message.error(errorMessage, 5); // Afficher pendant 5 secondes
+      console.error('Erreur détaillée:', error);
       return false;
     }
   }, []);

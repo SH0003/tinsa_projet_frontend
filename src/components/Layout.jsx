@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { 
-  SettingOutlined 
+  SettingOutlined,
+  FolderOpenOutlined
 } from '@ant-design/icons';
 import { Layout, Menu } from "antd";
 import { GrLogin } from "react-icons/gr";
@@ -72,12 +73,12 @@ const CustomLayout = ({ children }) => {
       { label: "Témoin", key: "/Temoins", icon: <SettingOutlined /> }
     ];
 
-    // Ajouter des items supplémentaires selon le rôle si nécessaire
-    if (userRole === 'superadmin' || userRole === 'validateur') {
-      setMenuItems(baseItems);
-    } else {
-      setMenuItems(baseItems);
+    // Ajouter l'item Dossiers uniquement pour le rôle developpement
+    if (userRole === 'developpement') {
+      baseItems.push({ label: "Dossiers", key: "/Dossiers", icon: <FolderOpenOutlined /> });
     }
+
+    setMenuItems(baseItems);
   }, []);
 
   useEffect(() => {
